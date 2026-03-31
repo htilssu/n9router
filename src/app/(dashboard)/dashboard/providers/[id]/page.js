@@ -25,6 +25,8 @@ export default function ProviderDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showEditNodeModal, setShowEditNodeModal] = useState(false);
   const [showBulkProxyModal, setShowBulkProxyModal] = useState(false);
+  const [importingAgt, setImportingAgt] = useState(false);
+  const [importResult, setImportResult] = useState(null);
   const [selectedConnection, setSelectedConnection] = useState(null);
   const [modelAliases, setModelAliases] = useState({});
   const [headerImgError, setHeaderImgError] = useState(false);
@@ -423,6 +425,24 @@ export default function ProviderDetailPage() {
   };
 
 
+  const handleImportFromAgt = async () => {
+    setImportingAgt(true);
+    setImportResult(null);
+    try {
+      const res = await fetch("/api/antigravity-tools/import", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setImportResult(data);
+        await fetchConnections();
+      } else {
+        setImportResult({ error: data.error || "Import failed" });
+      }
+    } catch (err) {
+      setImportResult({ error: err.message });
+    }
+    setImportingAgt(false);
+  };
+
   const isSelected = (connectionId) => selectedConnectionIds.includes(connectionId);
 
   const connectionsList = (
@@ -737,7 +757,7 @@ export default function ProviderDetailPage() {
       {providerInfo.notice && !providerInfo.deprecated && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05]">
           <span className="material-symbols-outlined text-[16px] text-text-muted shrink-0">info</span>
-          <p className="text-xs text-text-muted leading-relaxed flex-1">{providerInfo.notice.text}</p>
+          <p className="text-xs text-text-muted leading-relaxed">{providerInfo.notice.text}</p>
           {providerInfo.notice.apiKeyUrl && (
             <a
               href={providerInfo.notice.apiKeyUrl}
@@ -833,6 +853,22 @@ export default function ProviderDetailPage() {
           </div>
         </div>
 
+        {/* Import result feedback */}
+        {importResult && (
+          <div className={`flex items-center justify-between gap-2 mb-3 px-3 py-2 rounded-lg text-xs ${
+            importResult.error
+              ? "bg-red-500/5 border border-red-500/15 text-red-500"
+              : "bg-green-500/5 border border-green-500/15 text-green-600"
+          }`}>
+            <span>
+              {importResult.error
+                ? `✗ ${importResult.error}`
+                : `✓ Imported ${importResult.imported}, updated ${importResult.updated}, skipped ${importResult.skipped}`}
+            </span>
+            <button onClick={() => setImportResult(null)} className="text-current opacity-60 hover:opacity-100">✕</button>
+          </div>
+        )}
+
         {connections.length === 0 ? (
           <div className="text-center py-12">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-4">
@@ -850,6 +886,11 @@ export default function ProviderDetailPage() {
                 <Button icon="add" onClick={() => isOAuth ? setShowOAuthModal(true) : setShowAddApiKeyModal(true)}>
                   {providerId === "iflow" ? "OAuth" : "Add Connection"}
                 </Button>
+                {providerId === "antigravity" && (
+                  <Button icon="download" variant="secondary" onClick={handleImportFromAgt} disabled={importingAgt}>
+                    {importingAgt ? "Importing…" : "Import from AGT"}
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -876,6 +917,11 @@ export default function ProviderDetailPage() {
                 >
                   Add
                 </Button>
+                {providerId === "antigravity" && (
+                  <Button size="sm" icon="download" variant="secondary" onClick={handleImportFromAgt} disabled={importingAgt}>
+                    {importingAgt ? "Importing…" : "Import from AGT"}
+                  </Button>
+                )}
               </div>
             )}
           </>

@@ -23,6 +23,7 @@ export default function MitmToolCard({
   modelAliases = {},
   cloudEnabled,
   onDnsChange,
+  tokenSwapActive = false,
 }) {
   const [loading, setLoading] = useState(false);
   const [warning, setWarning] = useState(null);
@@ -144,15 +145,22 @@ export default function MitmToolCard({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="font-medium text-sm">{tool.name}</h3>
+                {tool.supportsTokenSwap && (
+                  <span className="text-[9px] uppercase tracking-wider text-text-muted bg-surface border border-border px-1.5 py-0.5 rounded font-semibold">
+                    Mode A
+                  </span>
+                )}
                 {!serverRunning ? (
                   <Badge variant="default" size="sm">Server off</Badge>
+                ) : tokenSwapActive ? (
+                  <Badge variant="default" size="sm">Bypassed</Badge>
                 ) : dnsActive ? (
                   <Badge variant="success" size="sm">Active</Badge>
                 ) : (
                   <Badge variant="warning" size="sm">DNS off</Badge>
                 )}
               </div>
-              <p className="text-xs text-text-muted">Intercept {tool.name} requests via MITM proxy</p>
+              <p className="text-xs text-text-muted">Model routing — remap model IDs in intercepted requests</p>
             </div>
           </div>
           <span className={`material-symbols-outlined text-text-muted text-[20px] transition-transform ${isExpanded ? "rotate-180" : ""}`}>
@@ -162,6 +170,21 @@ export default function MitmToolCard({
 
         {isExpanded && (
           <div className="mt-4 pt-4 border-t border-border flex flex-col gap-4">
+            {/* Token Swap bypass notice */}
+            {tokenSwapActive && (
+              <div className="flex items-start gap-2 px-2 py-2 rounded-lg bg-violet-500/5 border border-violet-500/15">
+                <span className="material-symbols-outlined text-[14px] text-violet-400 mt-0.5 shrink-0">info</span>
+                <p className="text-[11px] text-violet-400">
+                  Token Rotation (Mode B) is active — model routing is currently bypassed. Disable Token Rotation to use model routing.
+                </p>
+              </div>
+            )}
+
+            {/* Quick Action: Re-Launch IDE */}
+            {tool.id === "antigravity" && (
+              <IdeLaunchAction />
+            )}
+
             {/* Info */}
             <div className="flex flex-col gap-0.5 text-[11px] text-text-muted px-1">
               <p>Toggle DNS to redirect {tool.name} traffic through 9Router via MITM.</p>
@@ -215,6 +238,8 @@ export default function MitmToolCard({
             {tool.defaultModels?.length === 0 && (
               <p className="text-xs text-text-muted px-1">Model mappings will be available soon.</p>
             )}
+
+
 
             {/* Start / Stop DNS button */}
             <div className="flex flex-col gap-2 items-start">
@@ -297,3 +322,82 @@ export default function MitmToolCard({
     </>
   );
 }
+
+/**
+ * Sub-component: Close Antigravity IDE
+ */
+function IdeLaunchAction() {
+  const [status, setStatus] = useState(null);
+  const [closing, setClosing] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/antigravity-ide");
+      if (res.ok) setStatus(await res.json());
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/antigravity-ide");
+        if (res.ok && mounted) setStatus(await res.json());
+      } catch { /* ignore */ }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const handleClose = async () => {
+    setClosing(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/antigravity-ide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "close" }),
+      });
+      const data = await res.json();
+      setResult(data);
+      setTimeout(fetchStatus, 1000);
+    } catch (err) {
+      setResult({ success: false, error: err.message });
+    }
+    setClosing(false);
+  };
+
+  return (
+    <div className="flex items-center gap-2 px-1">
+      <button
+        onClick={handleClose}
+        disabled={closing || !status?.running}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-red-500/30 text-red-500 bg-red-500/5 hover:bg-red-500/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title={!status?.running ? "Antigravity IDE is not running" : "Close all Antigravity IDE processes"}
+      >
+        <span className={`material-symbols-outlined text-[14px] ${closing ? "animate-spin" : ""}`}>
+          {closing ? "progress_activity" : "close"}
+        </span>
+        {closing ? "Closing…" : "Close IDE"}
+      </button>
+
+      {/* Status indicator */}
+      {status && (
+        <span className="flex items-center gap-1 text-[10px] text-text-muted">
+          <span className={`inline-block w-1.5 h-1.5 rounded-full ${
+            !status.installed ? "bg-gray-400" : status.running ? "bg-green-500" : "bg-red-400"
+          }`} />
+          {!status.installed ? "Not installed" : status.running ? "Running" : "Stopped"}
+        </span>
+      )}
+
+      {/* Result feedback */}
+      {result && !closing && (
+        <span className={`text-[10px] ${result.success ? "text-green-500" : "text-red-400"}`}>
+          {result.success ? "✓" : "✗"} {result.message || result.error}
+        </span>
+      )}
+    </div>
+  );
+}
+

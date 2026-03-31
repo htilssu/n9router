@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { MITM_TOOLS } from "@/shared/constants/cliTools";
 import { getModelsByProviderId } from "@/shared/constants/models";
 import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider } from "@/shared/constants/providers";
-import { MitmServerCard, MitmToolCard } from "@/app/(dashboard)/dashboard/cli-tools/components";
+import { MitmServerCard, MitmToolCard, TokenSwapPoolCard } from "@/app/(dashboard)/dashboard/cli-tools/components";
 
 export default function MitmPageClient() {
   const [connections, setConnections] = useState([]);
@@ -13,13 +13,7 @@ export default function MitmPageClient() {
   const [cloudEnabled, setCloudEnabled] = useState(false);
   const [expandedTool, setExpandedTool] = useState(null);
   const [mitmStatus, setMitmStatus] = useState({ running: false, certExists: false, dnsStatus: {}, hasCachedPassword: false });
-
-  useEffect(() => {
-    fetchConnections();
-    fetchApiKeys();
-    fetchAliases();
-    fetchCloudSettings();
-  }, []);
+  const [tokenSwapActive, setTokenSwapActive] = useState(false);
 
   const fetchConnections = async () => {
     try {
@@ -57,9 +51,17 @@ export default function MitmPageClient() {
       if (res.ok) {
         const data = await res.json();
         setCloudEnabled(data.cloudEnabled || false);
+        setTokenSwapActive(!!data.tokenSwapEnabled);
       }
     } catch { /* ignore */ }
   };
+
+  useEffect(() => {
+    fetchConnections();
+    fetchApiKeys();
+    fetchAliases();
+    fetchCloudSettings();
+  }, []);
 
   const getActiveProviders = () => connections.filter(c => c.isActive !== false);
 
@@ -86,21 +88,32 @@ export default function MitmPageClient() {
       {/* Tool Cards */}
       <div className="flex flex-col gap-2">
         {mitmTools.map(([toolId, tool]) => (
-          <MitmToolCard
-            key={toolId}
-            tool={tool}
-            isExpanded={expandedTool === toolId}
-            onToggle={() => setExpandedTool(expandedTool === toolId ? null : toolId)}
-            serverRunning={mitmStatus.running}
-            dnsActive={mitmStatus.dnsStatus?.[toolId] || false}
-            hasCachedPassword={mitmStatus.hasCachedPassword || false}
-            apiKeys={apiKeys}
-            activeProviders={getActiveProviders()}
-            hasActiveProviders={hasActiveProviders()}
-            modelAliases={modelAliases}
-            cloudEnabled={cloudEnabled}
-            onDnsChange={(data) => setMitmStatus(prev => ({ ...prev, dnsStatus: data.dnsStatus ?? prev.dnsStatus }))}
-          />
+          <Fragment key={toolId}>
+            <MitmToolCard
+              tool={tool}
+              isExpanded={expandedTool === toolId}
+              onToggle={() => setExpandedTool(expandedTool === toolId ? null : toolId)}
+              serverRunning={mitmStatus.running}
+              dnsActive={mitmStatus.dnsStatus?.[toolId] || false}
+              hasCachedPassword={mitmStatus.hasCachedPassword || false}
+              apiKeys={apiKeys}
+              activeProviders={getActiveProviders()}
+              hasActiveProviders={hasActiveProviders()}
+              modelAliases={modelAliases}
+              cloudEnabled={cloudEnabled}
+              tokenSwapActive={tool.supportsTokenSwap && tokenSwapActive}
+              onDnsChange={(data) => setMitmStatus(prev => ({ ...prev, dnsStatus: data.dnsStatus ?? prev.dnsStatus }))}
+            />
+            {tool.supportsTokenSwap && (
+              <TokenSwapPoolCard
+                tool={tool}
+                connections={connections}
+                serverRunning={mitmStatus.running}
+                dnsActive={mitmStatus.dnsStatus?.[toolId] || false}
+                onToggle={(val) => setTokenSwapActive(val)}
+              />
+            )}
+          </Fragment>
         ))}
       </div>
     </div>
