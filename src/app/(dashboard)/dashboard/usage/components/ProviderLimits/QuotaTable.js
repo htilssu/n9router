@@ -1,40 +1,6 @@
 "use client";
 
-import { formatResetTime, calculatePercentage } from "./utils";
-
-/**
- * Format reset time display (Today, 12:00 PM)
- */
-function formatResetTimeDisplay(resetTime) {
-  if (!resetTime) return null;
-  
-  try {
-    const date = new Date(resetTime);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    let dayStr = "";
-    if (date >= today && date < tomorrow) {
-      dayStr = "Today";
-    } else if (date >= tomorrow && date < new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)) {
-      dayStr = "Tomorrow";
-    } else {
-      dayStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    }
-    
-    const timeStr = date.toLocaleTimeString("en-US", { 
-      hour: "numeric", 
-      minute: "2-digit",
-      hour12: true 
-    });
-    
-    return `${dayStr}, ${timeStr}`;
-  } catch {
-    return null;
-  }
-}
+import { formatResetTime, formatResetTimeDisplay, calculatePercentage } from "./utils";
 
 /**
  * Get color classes based on remaining percentage

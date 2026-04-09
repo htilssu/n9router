@@ -3,7 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, Badge, Toggle } from "@/shared/components";
 import Link from "next/link";
-import { parseQuotaData, formatResetTime } from "@/app/(dashboard)/dashboard/usage/components/ProviderLimits/utils";
+import {
+  parseQuotaData,
+  formatResetTime,
+  formatResetTimeDisplay,
+} from "@/app/(dashboard)/dashboard/usage/components/ProviderLimits/utils";
 
 // Model to highlight in the quota summary
 const HIGHLIGHT_MODEL = "claude-sonnet-4-6";
@@ -24,36 +28,6 @@ function getQuotaBg(pct) {
   if (pct > 70) return "bg-green-500";
   if (pct >= 30) return "bg-yellow-500";
   return "bg-red-500";
-}
-
-function formatResetTimeDisplay(resetTime) {
-  if (!resetTime) return null;
-
-  try {
-    const resetDate = new Date(resetTime);
-    const now = new Date();
-    const isToday = resetDate.toDateString() === now.toDateString();
-    const isTomorrow = resetDate.toDateString() === new Date(now.getTime() + 86400000).toDateString();
-
-    const timeStr = resetDate.toLocaleTimeString(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-
-    if (isToday) return `Today, ${timeStr}`;
-    if (isTomorrow) return `Tomorrow, ${timeStr}`;
-
-    return resetDate.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch {
-    return null;
-  }
 }
 
 function maskEmail(email) {
@@ -300,11 +274,15 @@ export default function TokenSwapPoolCard({ tool, connections = [], serverRunnin
         ? Math.round(((highlight.total - highlight.used) / highlight.total) * 100)
         : null;
 
-    const nextResetAt = [...q.quotas]
+    const highlightResetAt = highlight.resetAt && new Date(highlight.resetAt).getTime() > Date.now()
+      ? highlight.resetAt
+      : null;
+
+    const nextResetAt = highlightResetAt || [...q.quotas]
       .map((quota) => quota.resetAt)
       .filter(Boolean)
       .filter((resetAt) => new Date(resetAt).getTime() > Date.now())
-      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0] || highlight.resetAt || null;
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0] || null;
 
     return {
       state: pct === null ? "no-data" : "ready",

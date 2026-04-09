@@ -40,6 +40,44 @@ export function formatResetTime(date) {
 }
 
 /**
+ * Format reset time display (Today, 12:00 PM)
+ * @param {string|Date} resetTime - ISO date string or Date object
+ * @returns {string|null} Human-readable reset timestamp label
+ */
+export function formatResetTimeDisplay(resetTime) {
+  if (!resetTime) return null;
+
+  try {
+    const date = typeof resetTime === "string" ? new Date(resetTime) : resetTime;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfterTomorrow = new Date(tomorrow);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+
+    let dayStr = "";
+    if (date >= today && date < tomorrow) {
+      dayStr = "Today";
+    } else if (date >= tomorrow && date < dayAfterTomorrow) {
+      dayStr = "Tomorrow";
+    } else {
+      dayStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+
+    const timeStr = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    });
+
+    return `${dayStr}, ${timeStr}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Get Tailwind color class based on percentage
  * @param {number} percentage - Remaining percentage (0-100)
  * @returns {string} Color name: "green" | "yellow" | "red"

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/shared/utils/cn";
-import { formatResetTime } from "./utils";
+import { formatResetTime, formatResetTimeDisplay } from "./utils";
 
 // Calculate color based on remaining percentage
 const getColorClasses = (remainingPercentage) => {
@@ -30,37 +30,6 @@ const getColorClasses = (remainingPercentage) => {
     bgLight: "bg-red-500/10",
     emoji: "🔴"
   };
-};
-
-// Format reset time display
-const formatResetTimeDisplay = (resetTime) => {
-  if (!resetTime) return null;
-  
-  try {
-    const resetDate = new Date(resetTime);
-    const now = new Date();
-    const isToday = resetDate.toDateString() === now.toDateString();
-    const isTomorrow = resetDate.toDateString() === new Date(now.getTime() + 86400000).toDateString();
-    
-    const timeStr = resetDate.toLocaleTimeString(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-    
-    if (isToday) return `Today, ${timeStr}`;
-    if (isTomorrow) return `Tomorrow, ${timeStr}`;
-    
-    return resetDate.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch {
-    return null;
-  }
 };
 
 export default function QuotaProgressBar({
