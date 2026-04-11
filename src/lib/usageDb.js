@@ -12,10 +12,10 @@ const isCloud = typeof caches !== 'undefined' || typeof caches === 'object';
 function getAppName() {
   if (isCloud) return "n9router"; // Skip file system access in Workers
 
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  // Look for root package.json (monorepo root)
-  const rootPkgPath = path.resolve(__dirname, "../../../package.json");
   try {
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    // Look for root package.json (monorepo root)
+    const rootPkgPath = path.resolve(__dirname, "../../../package.json");
     const pkg = JSON.parse(fs.readFileSync(rootPkgPath, "utf-8"));
     return pkg.config?.appName || "n9router";
   } catch {
@@ -42,8 +42,11 @@ function getUserDataDir() {
     }
   } catch (error) {
     console.error("[usageDb] Failed to get user data directory:", error.message);
-    // Fallback to cwd if homedir fails
-    return path.join(process.cwd(), ".n9router");
+    // Fallback to home dir to avoid landing inside node_modules or cwd
+    const homeDir = os.homedir();
+    return process.platform === "win32"
+      ? path.join(process.env.APPDATA || path.join(homeDir, "AppData", "Roaming"), "n9router")
+      : path.join(homeDir, ".n9router");
   }
 }
 
