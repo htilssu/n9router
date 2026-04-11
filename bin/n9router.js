@@ -7,13 +7,111 @@
  * Usage:
  *   n9router                  # start on default port 20128
  *   PORT=3000 n9router        # start on custom port
+ *   n9router --version        # show current version
+ *   n9router --update         # check for updates and install if available
  */
 
 const path = require("path");
 const { execFileSync, spawn } = require("child_process");
 const fs = require("fs");
+const https = require("https");
 
 const pkgRoot = path.join(__dirname, "..");
+const pkg = require(path.join(pkgRoot, "package.json"));
+const PACKAGE_NAME = pkg.name; // "n9router"
+const CURRENT_VERSION = pkg.version;
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Fetch the latest version from the npm registry.
+ * Returns a promise that resolves to the version string.
+ */
+function fetchLatestVersion() {
+  return new Promise((resolve, reject) => {
+    const url = `https://registry.npmjs.org/${PACKAGE_NAME}/latest`;
+    https
+      .get(url, { headers: { Accept: "application/json" } }, (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => {
+          try {
+            const json = JSON.parse(data);
+            resolve(json.version || null);
+          } catch {
+            reject(new Error("Failed to parse registry response"));
+          }
+        });
+      })
+      .on("error", reject);
+  });
+}
+
+/**
+ * Compare two semver strings. Returns:
+ *   1  if a > b
+ *  -1  if a < b
+ *   0  if equal
+ */
+function compareSemver(a, b) {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+    if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+  }
+  return 0;
+}
+
+// ── --version ────────────────────────────────────────────────────────
+
+if (process.argv.includes("--version") || process.argv.includes("-v")) {
+  console.log(`n9router v${CURRENT_VERSION}`);
+  process.exit(0);
+}
+
+// ── --update ─────────────────────────────────────────────────────────
+
+if (process.argv.includes("--update")) {
+  (async () => {
+    console.log(`[n9router] Current version: v${CURRENT_VERSION}`);
+    console.log("[n9router] Checking for updates...");
+
+    try {
+      const latest = await fetchLatestVersion();
+      if (!latest) {
+        console.log("[n9router] Could not determine latest version.");
+        process.exit(1);
+      }
+
+      if (compareSemver(latest, CURRENT_VERSION) > 0) {
+        console.log(`[n9router] New version available: v${latest}`);
+        console.log(`[n9router] Updating via: npm i -g ${PACKAGE_NAME}@${latest}`);
+        try {
+          execFileSync("npm", ["i", "-g", `${PACKAGE_NAME}@${latest}`], {
+            stdio: "inherit",
+          });
+          console.log(`[n9router] ✅ Successfully updated to v${latest}`);
+        } catch {
+          console.error("[n9router] ❌ Update failed. Try manually:");
+          console.error(`  npm i -g ${PACKAGE_NAME}@${latest}`);
+          process.exit(1);
+        }
+      } else {
+        console.log(`[n9router] Already on the latest version (v${CURRENT_VERSION}).`);
+      }
+    } catch (err) {
+      console.error("[n9router] Failed to check for updates:", err.message);
+      process.exit(1);
+    }
+  })();
+
+  // prevent fall-through to server start
+  return;
+}
+
+// ── Start server ─────────────────────────────────────────────────────
+
 const standaloneServer = path.join(pkgRoot, ".next", "standalone", "server.js");
 
 if (!fs.existsSync(standaloneServer)) {
@@ -38,7 +136,25 @@ const baseUrl =
 // survives npm's src/ exclusion rules. Point manager.js straight at it.
 const mitmServerPath = path.join(pkgRoot, ".next", "standalone", "mitm", "server.js");
 
-console.log(`[n9router] Starting on ${baseUrl}`);
+console.log(`[n9router] Starting v${CURRENT_VERSION} on ${baseUrl}`);
+
+// Non-blocking update check on startup
+fetchLatestVersion()
+  .then((latest) => {
+    if (latest && compareSemver(latest, CURRENT_VERSION) > 0) {
+      console.log("");
+      console.log("  ╔══════════════════════════════════════════════════╗");
+      console.log(`  ║  🚀 New version available: v${latest.padEnd(22)}║`);
+      console.log(`  ║     Current version:  v${CURRENT_VERSION.padEnd(25)}║`);
+      console.log("  ║                                                  ║");
+      console.log("  ║  Run: n9router --update                          ║");
+      console.log("  ╚══════════════════════════════════════════════════╝");
+      console.log("");
+    }
+  })
+  .catch(() => {
+    // silently ignore — don't disrupt startup
+  });
 
 const child = spawn(
   process.execPath, // node
