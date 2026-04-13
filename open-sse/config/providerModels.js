@@ -1,4 +1,5 @@
 import { PROVIDERS } from "./providers.js";
+import { GOOGLE_TTS_LANGUAGES } from "./googleTtsLanguages.js";
 
 // Provider models - Single source of truth
 // Key = alias (cc, cx, gc, qw, if, ag, gh for OAuth; id for API Key)
@@ -43,7 +44,7 @@ export const PROVIDER_MODELS = {
     { id: "qwen3-coder-plus", name: "Qwen3 Coder Plus" },
     { id: "qwen3-coder-flash", name: "Qwen3 Coder Flash" },
     { id: "vision-model", name: "Qwen3 Vision Model" },
-    { id: "coder-model", name: "Qwen3.5 Coder Model" },
+    { id: "coder-model", name: "Qwen3.6 Coder Model" },
   ],
   if: [  // iFlow AI
     { id: "qwen3-coder-plus", name: "Qwen3 Coder Plus" },
@@ -220,7 +221,16 @@ export const PROVIDER_MODELS = {
     { id: "text-embedding-005", name: "Text Embedding 005", type: "embedding" },
     { id: "text-embedding-004", name: "Text Embedding 004 (Legacy)", type: "embedding" },
   ],
-  openrouter: [],
+  openrouter: [
+    // Embedding models
+    { id: "openai/text-embedding-3-large", name: "OpenAI Text Embedding 3 Large", type: "embedding" },
+    { id: "openai/text-embedding-3-small", name: "OpenAI Text Embedding 3 Small", type: "embedding" },
+    { id: "openai/text-embedding-ada-002", name: "OpenAI Text Embedding Ada 002", type: "embedding" },
+    { id: "qwen/qwen3-embedding-8b", name: "Qwen3 Embedding 8B", type: "embedding" },
+    { id: "perplexity/pplx-embed-v1-4b", name: "Perplexity Embed V1 4B", type: "embedding" },
+    { id: "perplexity/pplx-embed-v1-0.6b", name: "Perplexity Embed V1 0.6B", type: "embedding" },
+    { id: "nvidia/llama-nemotron-embed-vl-1b-v2:free", name: "NVIDIA Nemotron Embed VL 1B V2 (Free)", type: "embedding" },
+  ],
   glm: [
     { id: "glm-5.1", name: "GLM 5.1" },
     { id: "glm-5", name: "GLM 5" },
@@ -371,15 +381,7 @@ export const PROVIDER_MODELS = {
   "local-device": [
     { id: "default", name: "System Default Voice", type: "tts" },
   ],
-  "google-tts": [
-    { id: "en", name: "English", type: "tts" },
-    { id: "vi", name: "Vietnamese", type: "tts" },
-    { id: "zh-CN", name: "Chinese (Simplified)", type: "tts" },
-    { id: "fr", name: "French", type: "tts" },
-    { id: "de", name: "German", type: "tts" },
-    { id: "ja", name: "Japanese", type: "tts" },
-    { id: "ko", name: "Korean", type: "tts" },
-  ],
+  "google-tts": GOOGLE_TTS_LANGUAGES,
   // OpenAI TTS voices (hardcoded — no public API to list them)
   // Used by ttsCore.js when provider = openai
   "openai-tts-voices": [
