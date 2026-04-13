@@ -122,19 +122,11 @@ Default URLs:
 
 <div align="center">
   
-### 📺 Complete Setup Guide - 9Router + Claude Code FREE
+### 📺 How to use Antigravity Token Swap
   
-[![9Router + Claude Code Setup](https://img.youtube.com/vi/raEyZPg5xE0/maxresdefault.jpg)](https://www.youtube.com/watch?v=raEyZPg5xE0)
+[![n9Router + Token Swap](https://img.youtube.com/vi/juKVEoMvzPY/maxresdefault.jpg)](https://www.youtube.com/watch?v=juKVEoMvzPY)
 
-**🎬 Watch the complete step-by-step tutorial:**
-- ✅ 9Router installation & setup
-- ✅ FREE Claude Sonnet 4.5 configuration
-- ✅ Claude Code integration
-- ✅ Live coding demonstration
-
-**⏱️ Duration:** 20 minutes | **👥 By:** Developer Community
-
-[▶️ Watch on YouTube](https://www.youtube.com/watch?v=o3qYCyjrFYg)
+[▶️ Watch on YouTube](https://www.youtube.com/watch?v=juKVEoMvzPY)
 
 </div>
 
