@@ -2,6 +2,17 @@
 
 All notable changes to **n9router** will be documented in this file.
 
+## v0.4.12 (2026-04-23)
+
+### Features
+- Add RTK — filter context (ls/grep/find/...) before sending to LLM to save tokens
+- Add OpenCode Go provider and support for custom models
+- Add Text To Image provider
+- Support custom host URL for remote Ollama servers
+
+### Fixes
+- Fix copy to clipboard issue
+
 ## v0.4.11 (2026-04-23)
 
 ### Features
@@ -109,20 +120,6 @@ All notable changes to **n9router** will be documented in this file.
 ### Docs
 - Add Token Swap Pool feature to README (`199940a`)
 
-## v0.3.98 (2026-04-22)
-
-### Features
-- Add RTK — filter context (ls/grep/find/...) before sending to LLM to save tokens
-
-## v0.3.97 (2026-04-22)
-
-### Features
-- Add OpenCode Go provider and support for custom models
-- Add Text To Image provider
-- Support custom host URL for remote Ollama servers
-
-### Fixes
-- Fix copy to clipboard issue
 
 ## v0.3.96 (2026-04-17)
 
