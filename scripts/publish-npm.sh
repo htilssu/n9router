@@ -39,12 +39,12 @@ ok "Logged in to npm as: $NPM_USER"
 PKG_NAME=$(node -p "require('./package.json').name")
 PKG_VERSION=$(node -p "require('./package.json').version")
 
-# For non-latest tags, auto-append -<tag>.<YYYYMMDD> to form the publish version.
+# For non-latest tags, auto-append -<tag>.<YYYYMMDDHHMMSS> to form the publish version.
 # package.json is patched temporarily and restored via a trap.
 PUBLISH_VERSION="$PKG_VERSION"
 if [[ "$NPM_TAG" != "latest" ]]; then
-  RC_DATE=$(date +%Y%m%d)
-  PUBLISH_VERSION="${PKG_VERSION%-*}-${NPM_TAG}.${RC_DATE}"
+  RC_TIMESTAMP=$(date +%Y%m%d%H%M%S)
+  PUBLISH_VERSION="${PKG_VERSION%-*}-${NPM_TAG}.${RC_TIMESTAMP}"
   info "RC version : $PUBLISH_VERSION (package.json stays at $PKG_VERSION)"
   # Patch package.json; restore it on exit (success, error, or Ctrl-C)
   trap 'node -e "const p=require(\"./package.json\");p.version=\"'"$PKG_VERSION"'\";require(\"fs\").writeFileSync(\"./package.json\",JSON.stringify(p,null,2)+\"\\n\")"' EXIT
@@ -123,7 +123,7 @@ if $DRY_RUN; then
   ok "Dry-run mode — skipping actual publish."
   info "Run without --dry-run to publish for real."
 else
-  info "Publishing $PKG_NAME@$PKG_VERSION to npm (tag: $NPM_TAG)..."
+  info "Publishing $PKG_NAME@$PUBLISH_VERSION to npm (tag: $NPM_TAG)..."
   npm publish --access public --tag "$NPM_TAG"
   if [[ "$NPM_TAG" == "latest" ]]; then
     ok "Published! Install with: npm install -g $PKG_NAME"
