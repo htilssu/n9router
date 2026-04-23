@@ -97,6 +97,48 @@ function ensureBetterSqlite3(locationName, moduleRoot) {
   }
 }
 
+function copyDirSync(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirSync(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+/**
+ * When installed from npm (standalone mode), the open-sse directory lives
+ * inside .next/standalone/open-sse but the runtime server.js expects it
+ * at the parent level (__dirname/../open-sse = project root/open-sse).
+ * This copies it there so the source path aliases resolve correctly.
+ */
+function copyOpenSse() {
+  const standaloneOpenSse = path.join(standaloneRoot, "open-sse");
+  const parentOpenSse = path.join(standaloneRoot, "..", "open-sse");
+
+  if (!pathExists(standaloneRoot)) {
+    info("Skipping open-sse copy: standalone dir not present (dev install)");
+    return;
+  }
+
+  if (!pathExists(standaloneOpenSse)) {
+    info("Skipping open-sse copy: open-sse not found in standalone dir");
+    return;
+  }
+
+  info(`Copying open-sse → ${path.resolve(parentOpenSse)}`);
+  try {
+    copyDirSync(standaloneOpenSse, parentOpenSse);
+    info("open-sse copy complete");
+  } catch (error) {
+    warn(`open-sse copy failed: ${error.message}`);
+  }
+}
+
 function main() {
   const targets = [
     {
@@ -112,6 +154,8 @@ function main() {
   for (const target of targets) {
     ensureBetterSqlite3(target.name, target.moduleRoot);
   }
+
+  copyOpenSse();
 }
 
 main();
