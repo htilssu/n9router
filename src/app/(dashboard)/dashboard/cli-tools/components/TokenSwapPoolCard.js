@@ -98,8 +98,7 @@ export default function TokenSwapPoolCard({ tool, connections = [], serverRunnin
   const [retryCount503, setRetryCount503] = useState(DEFAULT_503_RETRY_COUNT); // global 503 retry count
   const [accountRetryOverrides, setAccountRetryOverrides] = useState({}); // local optimistic state for per-account 503 retry inputs
   const [togglingAccountId, setTogglingAccountId] = useState(null);
-  const [resettingAccountId, setResettingAccountId] = useState(null);
-  const [resettingAll, setResettingAll] = useState(false);
+  const [refreshingQuotaId, setRefreshingQuotaId] = useState(null);
   const [quotas, setQuotas] = useState({}); // { [connId]: { quotas: [], error: string|null, loading: bool, accountType?: string|null } }
   const quotaCacheRef = useRef({}); // { [connId]: { data: parsed, error, ts: number, accountType?: string|null } }
   const retryCount503TimerRef = useRef(null); // debounce timer for global 503 retry save
@@ -465,41 +464,15 @@ export default function TokenSwapPoolCard({ tool, connections = [], serverRunnin
     setTogglingAccountId(null);
   };
 
-  const resetAccountRecency = async (accountId) => {
-    if (!accountId || resettingAccountId || resettingAll || togglingAccountId) return;
-    setResettingAccountId(accountId);
-    try {
-      const res = await fetch(`/api/providers/${accountId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lastUsedAt: null,
-        }),
-      });
-      if (res.ok) {
-        await onRefreshConnections?.();
-      }
-    } catch { /* ignore */ }
-    setResettingAccountId(null);
+  const refreshAccountQuota = async (acc) => {
+    if (!acc?.id || refreshingQuotaId || togglingAccountId) return;
+    setRefreshingQuotaId(acc.id);
+    // Bust cache for this account and force a fresh fetch
+    delete quotaCacheRef.current[acc.id];
+    await fetchQuotas([acc], true);
+    setRefreshingQuotaId(null);
   };
 
-  const resetAllRecency = async () => {
-    if (resettingAll || resettingAccountId || togglingAccountId || providerAccounts.length === 0) return;
-    setResettingAll(true);
-    try {
-      await Promise.all(providerAccounts.map((acc) => (
-        fetch(`/api/providers/${acc.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lastUsedAt: null,
-          }),
-        })
-      )));
-      await onRefreshConnections?.();
-    } catch { /* ignore */ }
-    setResettingAll(false);
-  };
 
   const setRetryCount503Value = async (val) => {
     const clamped = Math.max(0, Math.min(20, isNaN(val) ? DEFAULT_503_RETRY_COUNT : val));
@@ -686,28 +659,7 @@ export default function TokenSwapPoolCard({ tool, connections = [], serverRunnin
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                {activeCount > 0 && (
-                  <button
-                    onClick={() => fetchQuotas(activeAccounts, true)}
-                    className="text-[10px] text-text-muted hover:text-primary flex items-center gap-0.5 transition-colors"
-                    title="Refresh quotas"
-                  >
-                    <span className="material-symbols-outlined text-[12px]">refresh</span>
-                  </button>
-                )}
-                {strategy === "round-robin" && providerAccounts.length > 0 && (
-                  <button
-                    onClick={resetAllRecency}
-                    disabled={resettingAll || !!resettingAccountId}
-                    className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-medium text-text-main hover:border-border-alt hover:bg-surface-alt disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title="Clear last-used timestamps for all pool accounts"
-                  >
-                    <span className="material-symbols-outlined text-[12px]">restart_alt</span>
-                    Reset order
-                  </button>
-                )}
-              </div>
+              
             </div>
             <p className="text-[10px] text-text-muted px-0.5">
               Round robin uses least-recently-used ordering. Accounts with no usage timestamp are tried first, then older timestamps rotate ahead of newer ones.
@@ -827,21 +779,19 @@ export default function TokenSwapPoolCard({ tool, connections = [], serverRunnin
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        {strategy === "round-robin" && (
                           <button
-                            onClick={() => resetAccountRecency(acc.id)}
-                            disabled={resettingAll || togglingAccountId === acc.id || resettingAccountId === acc.id}
+                            onClick={() => refreshAccountQuota(acc)}
+                            disabled={!!refreshingQuotaId || togglingAccountId === acc.id}
                             className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-medium text-text-main hover:border-border-alt hover:bg-surface-alt disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            title="Clear this account's last-used timestamp"
+                            title="Force-refresh quota for this account"
                           >
-                            <span className="material-symbols-outlined text-[12px]">restart_alt</span>
-                            {resettingAccountId === acc.id ? "..." : "Reset Order"}
+                            <span className="material-symbols-outlined text-[12px]">refresh</span>
+                            {refreshingQuotaId === acc.id ? "…" : "Refresh Quota"}
                           </button>
-                        )}
                         <Toggle
                           size="sm"
                           checked={acc.isActive !== false}
-                          disabled={resettingAll || resettingAccountId === acc.id || togglingAccountId === acc.id}
+                          disabled={!!refreshingQuotaId || togglingAccountId === acc.id}
                           onChange={(nextChecked) => toggleAccountActive(acc.id, nextChecked)}
                         />
                       </div>
