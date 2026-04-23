@@ -24,6 +24,8 @@ const { getCertForDomain } = require("./cert/generate");
 const { buildInputOnlyRequestDetail, createTokenSwapUsageObserver, generateDetailId } = require("./usageTracker");
 const { pushHealthEvent, getLastEventStatus } = require("./healthStore");
 
+const { applyRtkCompression } = require("./rtkCompressor");
+
 const DB_FILE = path.join(DATA_DIR, "db.json");
 const LOCAL_PORT = 443;
 const INTERNAL_REQUEST_HEADER = { name: "x-request-source", value: "local" };
@@ -188,6 +190,9 @@ async function tokenSwapForward(req, res, bodyBuffer, connections, model, strate
   const targetIP = await resolveTargetIP(targetHost);
   let lastRetryResponse = null;
 
+  // ── RTK compression (see src/mitm/rtkCompressor.js) ──
+  const effectiveBody = await applyRtkCompression(bodyBuffer, DB_FILE, log);
+
   for (let i = 0; i < connections.length; i++) {
     const originalConn = connections[i];
     let conn = await triggerRefreshIfNeeded(originalConn);
@@ -217,6 +222,10 @@ async function tokenSwapForward(req, res, bodyBuffer, connections, model, strate
         host: targetHost,
         authorization: `Bearer ${conn.accessToken}`
       };
+      // Update Content-Length if RTK compressed the body
+      if (effectiveBody !== bodyBuffer) {
+        swappedHeaders['content-length'] = String(effectiveBody.length);
+      }
 
       try {
         const result = await new Promise((resolve, reject) => {
@@ -242,7 +251,7 @@ async function tokenSwapForward(req, res, bodyBuffer, connections, model, strate
             }
           });
           forwardReq.on("error", reject);
-          if (bodyBuffer.length > 0) forwardReq.write(bodyBuffer);
+          if (effectiveBody.length > 0) forwardReq.write(effectiveBody);
           forwardReq.end();
         });
 

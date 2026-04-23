@@ -1,6 +1,6 @@
 {
   "name": "n9router",
-  "version": "0.4.13",
+  "version": "0.4.14",
   "description": "Self-hosted AI routing gateway — local proxy for Claude, Gemini, OpenAI and 40+ providers",
   "keywords": [
     "ai",
@@ -34,7 +34,7 @@
   "scripts": {
     "dev": "next dev --webpack --port 20128",
     "build": "NODE_ENV=production next build --webpack",
-    "postbuild": "cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/",
+    "postbuild": "cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/ && mkdir -p .next/standalone/open-sse/rtk && cp -r open-sse/rtk/. .next/standalone/open-sse/rtk/",
     "start": "NODE_ENV=production next start",
     "dev:bun": "bun --bun next dev --webpack --port 20128",
     "build:bun": "NODE_ENV=production bun --bun next build --webpack",

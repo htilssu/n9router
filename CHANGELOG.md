@@ -2,7 +2,13 @@
 
 All notable changes to **n9router** will be documented in this file.
 
+## v0.4.14 (2026-04-23)
+
+### Features
+- Integrate RTK (Token Killer) compression into the MITM token-swap path — large tool outputs (git-diff, grep, ls, etc.) are now compressed before forwarding to upstream providers, reducing token usage by ~7% on real workloads
+
 ## v0.4.12 (2026-04-23)
+
 
 ### Features
 - Add RTK — filter context (ls/grep/find/...) before sending to LLM to save tokens
