@@ -82,6 +82,28 @@ function ensureBetterSqlite3(locationName, moduleRoot) {
   }
 
   info(`Rebuilding better-sqlite3 in ${locationName} for ${process.platform}/${process.arch}`);
+
+  // 1. Try to copy from root if this is the standalone target and root is already valid
+  const rootModuleRoot = path.join(pkgRoot, "node_modules", "better-sqlite3");
+  const rootBinaryPath = path.join(rootModuleRoot, "build", "Release", "better_sqlite3.node");
+
+  if (moduleRoot !== rootModuleRoot && isBinaryValidForPlatform(rootBinaryPath)) {
+    info(`Copying valid better-sqlite3 from root node_modules to ${locationName}`);
+    try {
+      fs.mkdirSync(path.dirname(binaryPath), { recursive: true });
+      fs.copyFileSync(rootBinaryPath, binaryPath);
+      return;
+    } catch (err) {
+      warn(`Failed to copy better-sqlite3 from root: ${err.message}`);
+    }
+  }
+
+  // 2. Fall back to rebuild, but only if we have the source files
+  if (!pathExists(path.join(moduleRoot, "binding.gyp"))) {
+    info(`Skipping ${locationName} rebuild: binding.gyp not found (cannot rebuild from source)`);
+    return;
+  }
+
   try {
     rebuildModule("better-sqlite3", path.dirname(path.dirname(moduleRoot)));
   } catch (error) {
@@ -142,12 +164,12 @@ function copyOpenSse() {
 function main() {
   const targets = [
     {
-      name: ".next/standalone/node_modules",
-      moduleRoot: path.join(standaloneRoot, "node_modules", "better-sqlite3"),
-    },
-    {
       name: "root node_modules",
       moduleRoot: path.join(pkgRoot, "node_modules", "better-sqlite3"),
+    },
+    {
+      name: ".next/standalone/node_modules",
+      moduleRoot: path.join(standaloneRoot, "node_modules", "better-sqlite3"),
     },
   ];
 
