@@ -1,3 +1,9 @@
+# v0.4.5 (2026-04-24)
+
+## Improvements
+- Cap maximum cooldown for rate limit handling in account unavailability and single-model chat flows
+- Dynamic custom model fetching for model selection
+
 # v0.4.3 (2026-04-24)
 
 ## Improvements
