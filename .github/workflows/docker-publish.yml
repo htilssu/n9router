@@ -22,13 +22,16 @@ jobs:
       - uses: pnpm/action-setup@v6
         with:
           version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Build Next.js standalone
-        run: npm run build
+        run: |
+          pnpm install
+          npm run build
         env:
           NODE_ENV: production
           NEXT_PUBLIC_BASE_URL: http://localhost:20128
