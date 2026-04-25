@@ -1,5 +1,5 @@
 {
-  "name": "n9router",
+  "name": "hn9router",
   "version": "0.4.15",
   "description": "Self-hosted AI routing gateway — local proxy for Claude, Gemini, OpenAI and 40+ providers",
   "keywords": [
@@ -22,7 +22,7 @@
   },
   "license": "MIT",
   "bin": {
-    "n9router": "./bin/n9router.js"
+    "hn9router": "./bin/n9router.js"
   },
   "files": [
     "bin/",
