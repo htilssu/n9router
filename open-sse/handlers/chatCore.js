@@ -141,6 +141,13 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
     log?.debug?.("PROXY", `${provider.toUpperCase()} | ${model} | conn=${connectionName} | no_proxy=${proxyOptions.connectionNoProxy}`);
   }
 
+  //parse metadata
+  let metadata;
+  if (body.metadata && body.metadata.user_id) {
+    metadata = JSON.parse(body.metadata.user_id)
+    credentials.sessionId = metadata.session_id;
+  }
+
   // Execute request
   let providerResponse, providerUrl, providerHeaders, finalBody;
   try {

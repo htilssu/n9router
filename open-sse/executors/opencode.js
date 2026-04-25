@@ -1,9 +1,10 @@
-import { BaseExecutor } from "./base.js";
-import { PROVIDERS } from "../config/providers.js";
-import { deriveSessionId } from "../utils/sessionManager.js";
+import {BaseExecutor} from "./base.js";
+import {PROVIDERS} from "../config/providers.js";
+import {deriveSessionId} from "../utils/sessionManager.js";
 
 // Models that use /zen/v1/messages (claude format)
 const MESSAGES_MODELS = new Set(["big-pickle"]);
+
 
 export class OpenCodeExecutor extends BaseExecutor {
   constructor() {
@@ -13,8 +14,8 @@ export class OpenCodeExecutor extends BaseExecutor {
   buildUrl(model) {
     const base = "https://opencode.ai";
     return MESSAGES_MODELS.has(model)
-      ? `${base}/zen/v1/messages`
-      : `${base}/zen/v1/chat/completions`;
+           ? `${base}/zen/v1/messages`
+           : `${base}/zen/v1/chat/completions`;
   }
 
   buildHeaders(credentials, stream = true) {
@@ -22,7 +23,7 @@ export class OpenCodeExecutor extends BaseExecutor {
       "Content-Type": "application/json",
       "Authorization": "Bearer public",
       "x-opencode-client": "desktop",
-      "x-opencode-session": deriveSessionId(credentials?.connectionId || "opencode-public"),
+      "x-opencode-session": credentials?.sessionId || deriveSessionId("opencode-public"),
       "Accept": stream ? "text/event-stream" : "application/json"
     };
   }
