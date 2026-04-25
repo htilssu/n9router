@@ -4,7 +4,12 @@ import { v4 as uuidv4 } from "uuid";
 import path from "node:path";
 import fs from "node:fs";
 import lockfile from "proper-lockfile";
+import { createRequire } from "node:module";
 import { DATA_DIR } from "@/lib/dataDir.js";
+
+const require = createRequire(import.meta.url);
+const { createValidBackupSync, recoverCorruptJsonFileSync } = require("./dbFileSafety.js");
+const { startConfiguredDbPeriodicBackups } = require("./dbPeriodicBackup.js");
 
 const DEFAULT_MITM_ROUTER_BASE = "http://localhost:20128";
 const isCloud = typeof caches !== 'undefined' || typeof caches === 'object';
@@ -40,6 +45,7 @@ const DEFAULT_SETTINGS = {
   mitmAliasRoundRobinState: {},
   mitmAntigravityAutoDisableOnSonnetZero: true,
   rtkEnabled: false,
+  periodicDbBackupsEnabled: true,
 };
 
 function cloneDefaultData() {
@@ -60,6 +66,8 @@ function cloneDefaultData() {
 if (!isCloud && DB_FILE && !fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, JSON.stringify(cloneDefaultData(), null, 2));
 }
+
+if (!isCloud && DB_FILE) startConfiguredDbPeriodicBackups(DB_FILE);
 
 function ensureDbShape(data) {
   const defaults = cloneDefaultData();
@@ -172,7 +180,10 @@ async function safeRead(db) {
 }
 
 async function safeWrite(db) {
-  await withFileLock(db, () => db.write());
+  await withFileLock(db, () => {
+    if (DB_FILE && fs.existsSync(DB_FILE)) createValidBackupSync(DB_FILE);
+    return db.write();
+  });
 }
 
 export async function getDb() {
@@ -193,9 +204,13 @@ export async function getDb() {
     await safeRead(dbInstance);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      console.warn('[DB] Corrupt JSON detected, resetting to defaults...');
-      dbInstance.data = cloneDefaultData();
-      await safeWrite(dbInstance);
+      const recovered = recoverCorruptJsonFileSync(DB_FILE);
+      dbInstance.data = recovered.data;
+      console.warn(
+        recovered.restored
+          ? `[DB] Corrupt JSON detected. Restored ${DB_FILE} from ${recovered.source}; corrupt copy: ${recovered.corruptCopy}`
+          : `[DB] Corrupt JSON warning resolved after retry: ${DB_FILE}`
+      );
     } else {
       throw error;
     }
