@@ -26,7 +26,9 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          corepack enable pnpm
+          pnpm i
 
       - name: Build Next.js standalone
         run: npm run build
