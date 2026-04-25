@@ -1,5 +1,6 @@
 import { BaseExecutor } from "./base.js";
 import { PROVIDERS } from "../config/providers.js";
+import { deriveSessionId } from "../utils/sessionManager.js";
 
 // Models that use /zen/v1/messages (claude format)
 const MESSAGES_MODELS = new Set(["big-pickle"]);
@@ -16,12 +17,13 @@ export class OpenCodeExecutor extends BaseExecutor {
       : `${base}/zen/v1/chat/completions`;
   }
 
-  buildHeaders() {
+  buildHeaders(credentials, stream = true) {
     return {
       "Content-Type": "application/json",
       "Authorization": "Bearer public",
       "x-opencode-client": "desktop",
-      "Accept": "text/event-stream"
+      "x-opencode-session": deriveSessionId(credentials?.connectionId || "opencode-public"),
+      "Accept": stream ? "text/event-stream" : "application/json"
     };
   }
 }
