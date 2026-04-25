@@ -22,7 +22,7 @@
   },
   "license": "MIT",
   "bin": {
-    "n9router": "./bin/n9router.js"
+    "hn9router": "./bin/n9router.js"
   },
   "files": [
     "bin/",
