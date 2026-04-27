@@ -3,7 +3,7 @@ import { getSettings, updateSettings } from "@/lib/localDb";
 import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
 import { DATA_DIR } from "@/lib/dataDir";
 import { createRequire } from "node:module";
-import { setRtkEnabled } from "open-sse/rtk/flag.js";
+import { resetComboRotation } from "open-sse/services/combo.js";
 import bcrypt from "bcryptjs";
 import path from "path";
 
@@ -76,9 +76,12 @@ export async function PATCH(request) {
       applyOutboundProxyEnv(settings);
     }
 
-    // Sync RTK toggle immediately (sync cache for request hot path)
-    if (Object.prototype.hasOwnProperty.call(body, "rtkEnabled")) {
-      setRtkEnabled(settings.rtkEnabled);
+    // Invalidate combo rotation state when strategy settings change
+    if (
+      Object.prototype.hasOwnProperty.call(body, "comboStrategy") ||
+      Object.prototype.hasOwnProperty.call(body, "comboStrategies")
+    ) {
+      resetComboRotation();
     }
 
     if (Object.prototype.hasOwnProperty.call(body, "periodicDbBackupsEnabled")) {

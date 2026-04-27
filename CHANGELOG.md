@@ -1,13 +1,27 @@
-# Changelog
+# v0.4.6 (2026-04-25)
 
-## v0.4.16 (2026-04-24)
+## Features
+- Add BytePlus Provider
+- Add Codex support to image providers
+- Enhance image and embedding provider support
 
-### Features
-- Add hourly `db.json` backups with 3-day retention and a Profile settings toggle enabled by default
+## Improvements
+- Cap maximum cooldown for rate limit handling in account unavailability and single-model chat flows
+- Dynamic custom model fetching for model selection
 
-### Fixes
-- Prevent token-swap DB writes from racing normal local DB writes by using shared locking and atomic JSON updates
-- Stop resetting `db.json` to defaults on corrupt JSON; restore from a valid backup or preserve the corrupt file for recovery
+# v0.4.5 (2026-04-24)
+
+## Improvements
+- Cap maximum cooldown for rate limit handling in account unavailability and single-model chat flows
+- Dynamic custom model fetching for model selection
+
+# v0.4.3 (2026-04-24)
+
+## Improvements
+- Improve in-app download/update UX on dashboard
+- Improve Codex provider rate limit handling with precise cooldown (`resetsAtMs`) and email backfill for OAuth accounts
+
+# v0.4.2 (2026-04-24)
 
 ## v0.4.15 (2026-04-24)
 
